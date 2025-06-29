@@ -4,21 +4,64 @@ import net.fabricmc.api.ModInitializer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
+
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.io.File;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class DiscordBotChat implements ModInitializer {
+	private static final ExecutorService executor = Executors.newFixedThreadPool(4);
 	public static final String MOD_ID = "discordbotchat";
-
-	// This logger is used to write text to the console and the log file.
-	// It is considered best practice to use your mod id as the logger's name.
-	// That way, it's clear which mod wrote info, warnings, and errors.
-	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+	public static Config config;
 
 	@Override
 	public void onInitialize() {
-		// This code runs as soon as Minecraft is in a mod-load-ready state.
-		// However, some things (like resources) may still be uninitialized.
-		// Proceed with mild caution.
+		File configFile = new File("config/discord_bridge.json");
+		config = Config.load(configFile);
 
-		LOGGER.info("Hello Fabric world!");
+		System.out.println("Discord API IP: " + config.ip);
+		System.out.println("Discord API Port: " + config.port);
+
+		ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
+			String playerName = sender.getDisplayName().getString();
+			String playerMessage = message.getContent().getString();
+
+			String endpoint = config.endpoint.startsWith("/") ? config.endpoint : "/" + config.endpoint;
+			String url = String.format("http://%s:%d%s", config.ip, config.port, endpoint);
+
+			executor.submit(() -> {
+				sendPost(url, playerMessage, playerName);
+			});
+		});
 	}
+
+	public static void sendPost(String urlStr, String message, String playerName) {
+		try {
+			URL url = new URL(urlStr);
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+
+			con.setRequestMethod("POST");
+			con.setDoOutput(true);
+			con.setRequestProperty("Content-Type", "application/json");
+
+			String jsonInputString = "{\"username\":\""+playerName+"\",\"content\":\"" + message + "\"}";
+
+			try (OutputStream os = con.getOutputStream()) {
+				byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+				os.write(input, 0, input.length);
+			}
+
+			int code = con.getResponseCode();
+			System.out.println("POST send. Response Code: " + code);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 }
