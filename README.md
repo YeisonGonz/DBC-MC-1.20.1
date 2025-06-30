@@ -17,7 +17,8 @@ Este fichero es que contiene configuracion para mandar las peticiones a la API
   "port": 5000,
   "endpoint":"/send",
   "announcement_endpoint": "/announ",
-  "player_join_announcement": "false"
+  "player_join_announcement": "false",
+  "player_message_announcement": "true"
 }
 ```
 ## Post
@@ -29,3 +30,9 @@ algo de este estilo ```POST -H "Content-Type: application/json" -d '{"username":
 
 Ahora se ha implementado un mini sistema que manda un POST cuando un jugador entra o sale del servidor
 se puedes deshabilitar en la configuracion poniendo **player_join_announcement: "false"**.
+
+Ahora en tiempo de ejecucion puedes habilitar o deshabilitar los **announcements** con el comando ```/dbc```
+
+Por ejemplo:
+```/dbc message set false``` -> Deshabilitas mandar mensajes a Discord
+```/dbc annoiun set true``` -> Habilitas mandar el mensaje de conexion a Discord
