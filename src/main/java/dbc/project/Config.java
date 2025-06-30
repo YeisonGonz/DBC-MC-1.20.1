@@ -10,6 +10,8 @@ public class Config {
     public String ip = "127.0.0.1";
     public int port = 5000;
     public String endpoint = "send";
+    public String announcement_endpoint = "/announ";
+    public String player_join_announcement = "true";
 
     public static Config load(File configFile) {
         Gson gson = new Gson();

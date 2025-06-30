@@ -2,6 +2,7 @@ package dbc.project;
 
 import net.fabricmc.api.ModInitializer;
 
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
@@ -11,6 +12,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.io.File;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -38,6 +40,30 @@ public class DiscordBotChat implements ModInitializer {
 				sendPost(url, playerMessage, playerName);
 			});
 		});
+
+		if (config.player_join_announcement.equals("true")) {
+			ServerPlayConnectionEvents.JOIN.register((message, sender, player) -> {
+
+				String endpoint = config.announcement_endpoint.startsWith("/") ? config.announcement_endpoint : "/" + config.announcement_endpoint;
+				String url = String.format("http://%s:%d%s", config.ip, config.port, endpoint);
+				String playerName = message.getPlayer().getDisplayName().getString();
+
+				executor.submit(() -> {
+					sendAnnouncement(url, "true", playerName);
+				});
+			});
+
+			ServerPlayConnectionEvents.DISCONNECT.register((message, sender) -> {
+
+				String endpoint = config.announcement_endpoint.startsWith("/") ? config.announcement_endpoint : "/" + config.announcement_endpoint;
+				String url = String.format("http://%s:%d%s", config.ip, config.port, endpoint);
+				String playerName = message.getPlayer().getDisplayName().getString();
+
+				executor.submit(() -> {
+					sendAnnouncement(url, "false", playerName);
+				});
+			});
+		}
 	}
 
 	public static void sendPost(String urlStr, String message, String playerName) {
@@ -60,6 +86,29 @@ public class DiscordBotChat implements ModInitializer {
 			System.out.println("POST send. Response Code: " + code);
 
 		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static void sendAnnouncement(String urlStr, String status, String playerName) {
+		try {
+			URL url = new URL(urlStr);
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+
+			con.setRequestMethod("POST");
+			con.setDoOutput(true);
+			con.setRequestProperty("Content-Type", "application/json");
+
+			String jsonInputString = "{\"username\":\""+playerName+"\",\"status\":\"" + status + "\"}";
+
+			try (OutputStream os = con.getOutputStream()) {
+				byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+				os.write(input, 0, input.length);
+			}
+
+			int code = con.getResponseCode();
+			System.out.println("POST send. Response Code: " + code);
+		}  catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

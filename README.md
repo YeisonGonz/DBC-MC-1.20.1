@@ -15,7 +15,9 @@ Este fichero es que contiene configuracion para mandar las peticiones a la API
 {
   "ip": "192.168.1.20",
   "port": 5000,
-  "endpoint":"/send"
+  "endpoint":"/send",
+  "announcement_endpoint": "/announ",
+  "player_join_announcement": "false"
 }
 ```
 ## Post
@@ -23,3 +25,7 @@ Este fichero es que contiene configuracion para mandar las peticiones a la API
 El mod manda un POST a la API del bot de Discord con la estructura de **username** y **content**
 algo de este estilo ```POST -H "Content-Type: application/json" -d '{"username":"Steve", "content":"Test"}' http://192.168.1.1:5000/send```
 
+## Announcements 
+
+Ahora se ha implementado un mini sistema que manda un POST cuando un jugador entra o sale del servidor
+se puedes deshabilitar en la configuracion poniendo **player_join_announcement: "false"**.
